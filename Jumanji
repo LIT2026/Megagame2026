@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>JUMANJI Memory Adventure</title>
+<style>
+body {
+  margin: 0;
+  font-family: "Trebuchet MS", sans-serif;
+  background: url('https://images.unsplash.com/photo-1568480540093-4b8e9e87e1fc?auto=format&fit=crop&w=1350&q=80') no-repeat center center fixed;
+  background-size: cover;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.game {
+  background: rgba(0,0,0,0.6);
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(0,0,0,0.7);
+}
+h1 { color: #f2c94c; letter-spacing: 3px; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 80px);
+  gap: 12px;
+  margin: 20px auto;
+}
+.card {
+  width: 80px;
+  height: 80px;
+  background: green;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0;
+  perspective: 600px;
+}
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+.card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  backface-visibility: hidden;
+}
+.card-front {
+  background: #065f46;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.card-back {
+  background: url('https://upload.wikimedia.org/wikipedia/en/thumb/3/35/Jumanji_Welcome_to_the_Jungle.jpg/220px-Jumanji_Welcome_to_the_Jungle.jpg') center/cover no-repeat;
+  transform: rotateY(180deg);
+}
+.letter {
+  position: fixed;
+  inset:0;
+  background: rgba(0,0,0,0.85);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.letter-box {
+  background:#f5e6c8;
+  color:#2b2b2b;
+  padding:25px;
+  border-radius:12px;
+  max-width:350px;
+  text-align:center;
+  font-family:"Georgia", serif;
+  box-shadow: 0 0 30px black;
+}
+button {
+  margin-top:15px;
+  padding:10px 25px;
+  border-radius:20px;
+  border:none;
+  background:linear-gradient(135deg, #f2c94c, #f2994a);
+  font-weight:bold;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="game">
+  <h1>JUMANJI Memory Adventure</h1>
+  <p>Flip cards to find matching Jumanji characters!</p>
+  <div class="board" id="board"></div>
+  <button onclick="resetGame()">Restart Challenge</button>
+</div>
+
+<div class="letter" id="letter">
+  <div class="letter-box">
+    <h2>📜 JUMANJI</h2>
+    <p>
+      You have entered <b>Jumanji</b>…<br><br>
+      One of our friends is trapped inside the game.<br>
+      To save them, you must find the <b>four other avatar characters</b>.<br>
+      Each avatar can only be found by conquering <b>one station</b>.<br><br>
+      Only together can you save <b>Jumanji</b>.
+    </p>
+    <button onclick="showLookDown()">Continue</button>
+  </div>
+</div>
+
+<audio id="jungle" loop autoplay>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// Memory Game
+const board = document.getElementById("board");
+const letter = document.getElementById("letter");
+const jungle = document.getElementById("jungle");
+let cardsArray = [
+  '🦁','🐍','🐘','🦍','🦁','🐍','🐘','🦍'
+];
+let firstCard = null, secondCard = null;
+let lockBoard = false;
+
+function shuffle(array){ return array.sort(()=>0.5-Math.random()); }
+
+function createBoard(){
+  board.innerHTML = '';
+  shuffle(cardsArray).forEach(symbol=>{
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <div class="card-inner">
+        <div class="card-front"></div>
+        <div class="card-back">${symbol}</div>
+      </div>`;
+    card.addEventListener('click',flipCard);
+    board.appendChild(card);
+  });
+}
+
+function flipCard(){
+  if(lockBoard || this===firstCard) return;
+  this.classList.add('flipped');
+  if(!firstCard){
+    firstCard=this;
+  }else{
+    secondCard=this;
+    checkMatch();
+  }
+}
+
+function checkMatch(){
+  const firstSymbol=firstCard.querySelector('.card-back').textContent;
+  const secondSymbol=secondCard.querySelector('.card-back').textContent;
+  if(firstSymbol===secondSymbol){
+    firstCard.removeEventListener('click',flipCard);
+    secondCard.removeEventListener('click',flipCard);
+    firstCard=null; secondCard=null;
+    checkWin();
+  }else{
+    lockBoard=true;
+    setTimeout(()=>{
+      firstCard.classList.remove('flipped');
+      secondCard.classList.remove('flipped');
+      firstCard=null; secondCard=null; lockBoard=false;
+    },1000);
+  }
+}
+
+function checkWin(){
+  const flipped=board.querySelectorAll('.card.flipped');
+  if(flipped.length===cardsArray.length){
+    // Show Jumanji winner images
+    board.innerHTML='';
+    ['Dwayne Johnson','Kevin Hart','Jack Black','Karen Gillan'].forEach(name=>{
+      const img=document.createElement('div');
+      img.style.background=`url('https://upload.wikimedia.org/wikipedia/en/3/35/Jumanji_Welcome_to_the_Jungle.jpg') center/cover no-repeat`;
+      img.style.width='100px'; img.style.height='140px';
+      img.style.margin='10px'; img.title=name;
+      board.appendChild(img);
+    });
+    // Show letter first
+    setTimeout(()=>letter.style.display='flex',500);
+  }
+}
+
+function resetGame(){ createBoard(); }
+function showLookDown(){ letter.style.display='none'; alert('Winner says: look downwards'); }
+
+createBoard();
+</script>
+
+</body>
+</html>
